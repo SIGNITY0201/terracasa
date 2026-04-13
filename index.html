@@ -14,6 +14,23 @@
     <!-- 3. EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
+    <!-- 4. Firebase (CRM 연동) — compat 버전 (일반 스크립트 호환) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script>
+      const __fbApp = firebase.initializeApp({
+        apiKey: "AIzaSyDs8IJANSBncJHcFFrF03pLM7JvEOppcY0",
+        authDomain: "oska-integrated-management.firebaseapp.com",
+        projectId: "oska-integrated-management",
+        storageBucket: "oska-integrated-management.firebasestorage.app",
+        messagingSenderId: "778732114280",
+        appId: "1:778732114280:web:96e00aff42bdbff3bf06dd"
+      });
+      firebase.auth().signInAnonymously();
+      window.TC_CRM_DB = firebase.firestore();
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; }
@@ -57,7 +74,7 @@
             
             <!-- STEP 1: 인트로 -->
             <div id="step-1" class="step-content flex flex-col items-center text-center py-4">
-               <img src="logo.png" class="h-36 mb-8" alt="TERRACASA LOGO">
+               <img src="테라까사-로고.png" class="h-36 mb-8" alt="TERRACASA LOGO">
                 <h2 class="text-xl md:text-2xl font-black text-gray-800 mb-6 leading-tight">
                     공간의 가치를 더하는 테라스 솔루션,<br>
                     <span class="text-tc-olive">TERRACASA 자동 견적 시스템</span>에<br>오신 것을 환영합니다.
@@ -778,6 +795,32 @@
                 capped_msg: res.isCapped ? '※ 최대 규격 초과' : ''
             };
             try { await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams); } catch(e) { console.error("Email Error", e); }
+
+            // Firestore CRM 자동 저장
+            try {
+              const now = new Date();
+              await window.TC_CRM_DB.collection('crm_customers').add({
+                brand: '테라까사',
+                date: now.toISOString().slice(0, 10),
+                year: now.getFullYear() + '년',
+                month: (now.getMonth() + 1) + '월',
+                channel: '도슨트투어',
+                consent: '동의',
+                phone: formData.phone,
+                email: '',
+                product: '파고라',
+                custType: '개인',
+                grade: '',
+                grade2: '',
+                province: formData.regionDo,
+                district: formData.regionSi,
+                address: '',
+                assignedBranch: '',
+                status: '미배정',
+                content: `[테라까사 도슨트] 유형: ${formData.userType} / 작동: ${formData.operationType === 'manual' ? '수동' : '전동'} / 사이즈: ${formData.width}m x ${formData.projection}m / 옵션: ${formData.optionLed?'LED ':''}${formData.optionGlass!=='none'?'글라스도어 ':''}${formData.optionDeck?'데크':''}/ 시기: ${formData.timeline} / 견적: ₩${res.totalPrice.toLocaleString()}`,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            } catch(e) { console.log('Firestore CRM 저장 오류:', e); }
         }
 
         async function submitConsultation() {
@@ -813,6 +856,33 @@ ${formData.consultDetail || "입력된 상세 내용 없음"}
             try {
                 // EmailJS template의 message 변수를 통해 전송 (기존 템플릿 재활용 혹은 별도 구성 가능)
                 await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, consultParams);
+
+                // Firestore CRM 자동 저장 (빠른 상담)
+                try {
+                  const now = new Date();
+                  await window.TC_CRM_DB.collection('crm_customers').add({
+                    brand: '테라까사',
+                    date: now.toISOString().slice(0, 10),
+                    year: now.getFullYear() + '년',
+                    month: (now.getMonth() + 1) + '월',
+                    channel: '도슨트투어',
+                    consent: '동의',
+                    phone: formData.phone,
+                    email: '',
+                    product: '파고라',
+                    custType: '개인',
+                    grade: '',
+                    grade2: '',
+                    province: formData.regionDo,
+                    district: formData.regionSi,
+                    address: '',
+                    assignedBranch: '',
+                    status: '미배정',
+                    content: `[테라까사 빠른상담] ${formData.consultDetail || '상세내용 없음'}`,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                  });
+                } catch(e) { console.log('Firestore CRM 저장 오류:', e); }
+
                 currentStep = 9;
                 updateStepUI();
             } catch (err) {
