@@ -799,12 +799,16 @@
             // Firestore CRM 자동 저장
             try {
               const now = new Date();
+              const snap = await window.TC_CRM_DB.collection('crm_customers').orderBy('no', 'desc').limit(1).get();
+              let newNo = 1;
+              if (!snap.empty) newNo = (snap.docs[0].data().no || 0) + 1;
               await window.TC_CRM_DB.collection('crm_customers').add({
+                no: newNo,
                 brand: '테라까사',
                 date: now.toISOString().slice(0, 10),
                 year: now.getFullYear() + '년',
                 month: (now.getMonth() + 1) + '월',
-                channel: '도슨트투어',
+                channel: '자동견적',
                 consent: '동의',
                 phone: formData.phone,
                 email: '',
@@ -820,6 +824,7 @@
                 content: `[테라까사 도슨트] 유형: ${formData.userType} / 작동: ${formData.operationType === 'manual' ? '수동' : '전동'} / 사이즈: ${formData.width}m x ${formData.projection}m / 옵션: ${formData.optionLed?'LED ':''}${formData.optionGlass!=='none'?'글라스도어 ':''}${formData.optionDeck?'데크':''}/ 시기: ${formData.timeline} / 견적: ₩${res.totalPrice.toLocaleString()}`,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
               });
+              console.log('[FB] 테라까사 CRM 저장 성공, no:', newNo);
             } catch(e) { console.log('Firestore CRM 저장 오류:', e); }
         }
 
@@ -860,12 +865,16 @@ ${formData.consultDetail || "입력된 상세 내용 없음"}
                 // Firestore CRM 자동 저장 (빠른 상담)
                 try {
                   const now = new Date();
+                  const snap2 = await window.TC_CRM_DB.collection('crm_customers').orderBy('no', 'desc').limit(1).get();
+                  let newNo2 = 1;
+                  if (!snap2.empty) newNo2 = (snap2.docs[0].data().no || 0) + 1;
                   await window.TC_CRM_DB.collection('crm_customers').add({
+                    no: newNo2,
                     brand: '테라까사',
                     date: now.toISOString().slice(0, 10),
                     year: now.getFullYear() + '년',
                     month: (now.getMonth() + 1) + '월',
-                    channel: '도슨트투어',
+                    channel: '빠른상담',
                     consent: '동의',
                     phone: formData.phone,
                     email: '',
@@ -881,6 +890,7 @@ ${formData.consultDetail || "입력된 상세 내용 없음"}
                     content: `[테라까사 빠른상담] ${formData.consultDetail || '상세내용 없음'}`,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                   });
+                  console.log('[FB] 테라까사 빠른상담 CRM 저장 성공, no:', newNo2);
                 } catch(e) { console.log('Firestore CRM 저장 오류:', e); }
 
                 currentStep = 9;
